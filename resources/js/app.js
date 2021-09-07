@@ -6,3 +6,14 @@
  */
 
 require('./bootstrap');
+
+window.Vue = require('vue');
+
+import 'bootstrap/dist/css/bootstrap.css'
+import axios from 'axios'
+
+Vue.component('order-detail', require('./components/OrderDetail.vue').default);
+
+const app = new Vue({
+    el: '#app',
+});

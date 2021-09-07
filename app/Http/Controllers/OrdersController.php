@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Order;
 use App\Partner;
 use App\Product;
+use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
+
 
 class OrdersController extends Controller
 {
@@ -23,74 +25,52 @@ class OrdersController extends Controller
         return view('orders', compact('orders'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
 
     public function edit($id)
     {
-        $order = Order::with('partner', 'products')
-            ->where('id', $id)
-            ->get();
+        $order = Order::findOrFail($id);
 
-        $status_types = [
-            '0' => 'новый',
-            '10' => 'подтвержден',
-            '20' => 'завершен',
-        ];
+        $order = $order->with('partner', 'products')
+            ->where('id', $id)->first();
+
+        $status_types = json_encode(Order::STATUS_TYPES);
 
         $partners = Partner::get();
         $products = Product::get();
 
-        $data = [
-            'order_info' => $order,
-            'partners' => $partners,
-            'products' => $products,
-            'status_types' => $status_types
-        ];
-
-
-        return view('detail', compact('data'));
+        return view('detail', compact(['order', 'partners', 'products', 'status_types']));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function update(Request $request, $id)
     {
-        //
+
+        try {
+
+            $this->validate($request, [
+                'status' => 'required|numeric',
+                'partner_id' => 'required|numeric',
+                'client_email' => 'required|email'
+            ]);
+
+        } catch (ValidationException $exception) {
+            return response()->json($exception->getMessage());
+        }
+
+        $order = Order::findOrFail($id);
+
+        $order->update([
+            'status' => $request->status,
+            'partner_id' => $request->partner_id,
+            'client_email' => $request->client_email
+        ]);
+
+        $order->save();
+
+        return response()->json(['msg' => 'Запись успешно обновлена'],
+            200, [], JSON_UNESCAPED_UNICODE);
+
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param int $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
-    }
+
 }
